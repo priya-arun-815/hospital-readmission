@@ -1,5 +1,5 @@
 // src/components/USMap.jsx
-import React, { useState } from "react";
+import React from "react";
 import { ComposableMap, Geographies, Geography } from "react-simple-maps";
 import { scaleSequential } from "d3-scale";
 import { interpolateReds } from "d3-scale-chromatic";
@@ -7,7 +7,7 @@ import { Tooltip } from "react-tooltip";
 
 const geoUrl = "https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json";
 
-// Readmission rate data per state (in %)
+// Readmission rates by state
 const stateReadmissionRates = {
   AK: 14.49, AL: 16.79, AR: 16.16, AZ: 15.18, CA: 17.68, CO: 13.92, CT: 17.23,
   DC: 17.91, DE: 15.73, FL: 17.69, GA: 17.52, HI: 15.57, IA: 14.38, ID: 11.17,
@@ -19,55 +19,58 @@ const stateReadmissionRates = {
   WV: 18.81, WY: 13.47
 };
 
-// Smooth gradient scale (interpolateReds)
+// D3 gradient scale like Plotly Reds
 const colorScale = scaleSequential()
-  .domain([10, 19]) // Adjust min/max based on your data
+  .domain([10, 19]) // % range
   .interpolator(interpolateReds);
 
 const USMap = () => {
-  const [tooltipContent, setTooltipContent] = useState("");
+  const [tooltipContent, setTooltipContent] = React.useState("");
 
   return (
-    <div className="w-full h-auto">
-      <h2 className="text-2xl font-semibold text-center mb-4">
+    <div className="w-full flex flex-col items-center">
+      <h2 className="text-2xl font-semibold text-center mb-4 text-slate-800">
         📍 Hospital Readmission Rates by State (CMS Data)
       </h2>
+
       <Tooltip>{tooltipContent}</Tooltip>
 
-      <ComposableMap projection="geoAlbersUsa">
-        <Geographies geography={geoUrl}>
-          {({ geographies }) =>
-            geographies.map((geo) => {
-              const abbrev = geo.id;
-              const value = stateReadmissionRates[abbrev];
+      <div className="w-full max-w-[800px]">
+        <ComposableMap projection="geoAlbersUsa" width={800} height={500}>
+          <Geographies geography={geoUrl}>
+            {({ geographies }) =>
+              geographies.map((geo) => {
+                const abbrev = geo.id;
+                const rate = stateReadmissionRates[abbrev];
 
-              return (
-                <Geography
-                  key={geo.rsmKey}
-                  geography={geo}
-                  fill={value ? colorScale(value) : "#EEE"}
-                  stroke="#FFF"
-                  onMouseEnter={() => {
-                    setTooltipContent(
-                      `${geo.properties.name}
-                      \nReadmission Rate: ${value?.toFixed(2) || "N/A"}%`
-                    );
-                  }}
-                  onMouseLeave={() => setTooltipContent("")}
-                  style={{
-                    default: { outline: "none" },
-                    hover: { fill: "#6366f1", outline: "none" },
-                    pressed: { outline: "none" },
-                  }}
-                />
-              );
-            })
-          }
-        </Geographies>
-      </ComposableMap>
+                return (
+                  <Geography
+                    key={geo.rsmKey}
+                    geography={geo}
+                    fill={rate ? colorScale(rate) : "#EEE"}
+                    stroke="#fff"
+                    onMouseEnter={() => {
+                      setTooltipContent(
+                        `${geo.properties.name}: ${rate ? rate.toFixed(2) : "N/A"}%`
+                      );
+                    }}
+                    onMouseLeave={() => {
+                      setTooltipContent("");
+                    }}
+                    style={{
+                      default: { outline: "none" },
+                      hover: { fill: "#4f46e5", outline: "none" }, // Indigo hover
+                      pressed: { outline: "none" }
+                    }}
+                  />
+                );
+              })
+            }
+          </Geographies>
+        </ComposableMap>
+      </div>
     </div>
   );
 };
 
 export default USMap;
-
